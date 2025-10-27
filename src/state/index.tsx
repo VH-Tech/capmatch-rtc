@@ -97,7 +97,7 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
     contextValue = {
       ...contextValue,
       getToken: async (user_identity, room_name) => {
-        const endpoint = 'https://server-only-frosty-sound-9876.fly.dev/token';
+        const endpoint = process.env.REACT_APP_TOKEN_ENDPOINT || 'https://server-only-frosty-sound-9876.fly.dev/token';
 
         return fetch(endpoint, {
           method: 'POST',
