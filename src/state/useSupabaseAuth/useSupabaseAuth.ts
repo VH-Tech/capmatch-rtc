@@ -110,8 +110,8 @@ export default function useSupabaseAuth() {
   const compatibleUser = user
     ? {
         ...user,
-        displayName: user.user_metadata?.full_name || user.email || 'User',
-        photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture || undefined,
+        displayName: user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'User',
+        photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.photo || undefined,
       }
     : null;
 
