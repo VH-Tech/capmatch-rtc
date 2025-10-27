@@ -23,7 +23,7 @@ export default function useTranscriptions(room: Room | null) {
       };
 
       console.log(`${transcriptionEvent.participant}: ${transcriptionEvent.transcription}`);
-      console.log(transcriptionEvent);
+      console.log(transcriptionData);
 
       setTranscriptions(prevTranscriptions => [...prevTranscriptions, transcriptionEvent]);
     };
