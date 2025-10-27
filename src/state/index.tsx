@@ -6,6 +6,7 @@ import useActiveSinkId from './useActiveSinkId/useActiveSinkId';
 import useFirebaseAuth from './useFirebaseAuth/useFirebaseAuth';
 import { useLocalStorageState } from '../hooks/useLocalStorageState/useLocalStorageState';
 import usePasscodeAuth from './usePasscodeAuth/usePasscodeAuth';
+import useSupabaseAuth from './useSupabaseAuth/useSupabaseAuth';
 import { User } from 'firebase/auth';
 
 export interface StateContextType {
@@ -87,6 +88,11 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
     contextValue = {
       ...contextValue,
       ...useFirebaseAuth(), // eslint-disable-line react-hooks/rules-of-hooks
+    };
+  } else if (process.env.REACT_APP_SET_AUTH === 'supabase') {
+    contextValue = {
+      ...contextValue,
+      ...useSupabaseAuth(), // eslint-disable-line react-hooks/rules-of-hooks
     };
   } else if (process.env.REACT_APP_SET_AUTH === 'passcode') {
     contextValue = {

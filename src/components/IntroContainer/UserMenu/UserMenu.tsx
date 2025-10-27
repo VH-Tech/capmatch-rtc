@@ -48,7 +48,7 @@ const UserMenu: React.FC = () => {
     );
   }
 
-  if (process.env.REACT_APP_SET_AUTH === 'firebase') {
+  if (process.env.REACT_APP_SET_AUTH === 'firebase' || process.env.REACT_APP_SET_AUTH === 'supabase') {
     return (
       <div className={classes.userContainer}>
         <UserAvatar user={user} />

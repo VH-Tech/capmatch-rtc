@@ -87,15 +87,21 @@ export default function LoginPage() {
 
   return (
     <IntroContainer>
-      {process.env.REACT_APP_SET_AUTH === 'firebase' && (
+      {(process.env.REACT_APP_SET_AUTH === 'firebase' || process.env.REACT_APP_SET_AUTH === 'supabase') && (
         <>
           <Typography variant="h5" className={classes.gutterBottom}>
             Sign in to join a room
           </Typography>
-          <Typography variant="body1">Sign in using your Twilio Google Account</Typography>
+          <Typography variant="body1">Sign in using your Google Account</Typography>
           <Button variant="contained" className={classes.googleButton} onClick={login} startIcon={<GoogleLogo />}>
             Sign in with Google
           </Button>
+          {authError && (
+            <Typography variant="caption" className={classes.errorMessage}>
+              <ErrorOutlineIcon />
+              {authError.message}
+            </Typography>
+          )}
         </>
       )}
 

@@ -13,6 +13,7 @@ import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '../../../icons/SettingsIcon';
 import { Button, styled, Theme, useMediaQuery, Menu as MenuContainer, MenuItem, Typography } from '@material-ui/core';
 import { isSupported } from '@twilio/video-processors';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
 import { useAppState } from '../../../state';
 import useChatContext from '../../../hooks/useChatContext/useChatContext';
@@ -21,6 +22,7 @@ import useVideoContext from '../../../hooks/useVideoContext/useVideoContext';
 import FlipCameraIcon from '../../../icons/FlipCameraIcon';
 import useFlipCameraToggle from '../../../hooks/useFlipCameraToggle/useFlipCameraToggle';
 import { VideoRoomMonitor } from '@twilio/video-room-monitor';
+import { useHistory } from 'react-router-dom';
 
 export const IconContainer = styled('div')({
   display: 'flex',
@@ -36,13 +38,25 @@ export default function Menu(props: { buttonClassName?: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const { isFetching, updateRecordingRules, roomType, setIsGalleryViewActive, isGalleryViewActive } = useAppState();
+  const { isFetching, updateRecordingRules, roomType, setIsGalleryViewActive, isGalleryViewActive, user, signOut } = useAppState();
   const { setIsChatWindowOpen } = useChatContext();
   const isRecording = useIsRecording();
   const { room, setIsBackgroundSelectionOpen } = useVideoContext();
+  const history = useHistory();
 
   const anchorRef = useRef<HTMLButtonElement>(null);
   const { flipCameraDisabled, toggleFacingMode, flipCameraSupported } = useFlipCameraToggle();
+
+  const isAuthEnabled = Boolean(process.env.REACT_APP_SET_AUTH);
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    if (room) {
+      room.disconnect();
+    }
+    await signOut?.();
+    history.push('/login');
+  };
 
   return (
     <>
@@ -157,6 +171,15 @@ export default function Menu(props: { buttonClassName?: string }) {
           </IconContainer>
           <Typography variant="body1">About</Typography>
         </MenuItem>
+
+        {isAuthEnabled && user && (
+          <MenuItem onClick={handleSignOut}>
+            <IconContainer>
+              <ExitToAppIcon style={{ fill: '#707578', width: '0.9em' }} />
+            </IconContainer>
+            <Typography variant="body1">Sign Out</Typography>
+          </MenuItem>
+        )}
       </MenuContainer>
       <AboutDialog
         open={aboutOpen}
