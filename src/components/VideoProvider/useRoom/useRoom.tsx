@@ -21,7 +21,7 @@ export default function useRoom(localTracks: LocalTrack[], onError: Callback, op
   const connect = useCallback(
     token => {
       setIsConnecting(true);
-      return Video.connect(token, { ...optionsRef.current, tracks: localTracks }).then(
+      return Video.connect(token, { ...optionsRef.current, tracks: localTracks, receiveTranscriptions: true }).then(
         newRoom => {
           setRoom(newRoom);
           VideoRoomMonitor.registerVideoRoom(newRoom);

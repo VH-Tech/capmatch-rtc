@@ -11,6 +11,7 @@ import useLocalTracks from './useLocalTracks/useLocalTracks';
 import useRestartAudioTrackOnDeviceChange from './useRestartAudioTrackOnDeviceChange/useRestartAudioTrackOnDeviceChange';
 import useRoom from './useRoom/useRoom';
 import useScreenShareToggle from './useScreenShareToggle/useScreenShareToggle';
+import useTranscriptions, { TranscriptionEvent } from './useTranscriptions/useTranscriptions';
 
 /*
  *  The hooks used by the VideoProvider component are different than the hooks found in the 'hooks/' directory. The hooks
@@ -35,6 +36,8 @@ export interface IVideoContext {
   setIsBackgroundSelectionOpen: (value: boolean) => void;
   backgroundSettings: BackgroundSettings;
   setBackgroundSettings: (settings: BackgroundSettings) => void;
+  transcriptions: TranscriptionEvent[];
+  clearTranscriptions: () => void;
 }
 
 export const VideoContext = createContext<IVideoContext>(null!);
@@ -83,6 +86,7 @@ export function VideoProvider({ options, children, onError = () => {} }: VideoPr
     | LocalVideoTrack
     | undefined;
   const [backgroundSettings, setBackgroundSettings] = useBackgroundSettings(videoTrack, room);
+  const { transcriptions, clearTranscriptions } = useTranscriptions(room);
 
   return (
     <VideoContext.Provider
@@ -102,6 +106,8 @@ export function VideoProvider({ options, children, onError = () => {} }: VideoPr
         setIsBackgroundSelectionOpen,
         backgroundSettings,
         setBackgroundSettings,
+        transcriptions,
+        clearTranscriptions,
       }}
     >
       <SelectedParticipantProvider room={room}>{children}</SelectedParticipantProvider>
