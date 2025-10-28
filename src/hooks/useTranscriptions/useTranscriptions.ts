@@ -230,7 +230,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
     [enabled, participantNameMap, room, saveTranscriptionToSupabase]
   );
 
-  // Fetch participant name mappings from Supabase
+  // Fetch participant name mappings from Supabase (with polling)
   useEffect(() => {
     if (!room || !enabled) {
       return;
@@ -253,20 +253,27 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
           data.forEach((row: any) => {
             mappings[row.participant_sid] = row.participant_identity;
           });
-          setParticipantNameMap(mappings);
+          // Only update when there is a change to avoid unnecessary re-renders
+          setParticipantNameMap(prev => {
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(mappings);
+            if (prevKeys.length !== nextKeys.length) return mappings;
+            for (const k of nextKeys) {
+              if (prev[k] !== mappings[k]) return mappings;
+            }
+            return prev; // unchanged
+          });
         }
       } catch (error) {
         console.error('Error fetching participant mappings:', error);
       }
     };
 
-    // Fetch immediately, then also fetch again after 5 seconds
+    // Polling interval (ms), default 5000. Configurable via env var
+    const pollMs = Number(process.env.REACT_APP_PARTICIPANT_POLL_MS) || 5000;
     fetchParticipantMappings();
-    const timeoutId = setTimeout(() => {
-      fetchParticipantMappings();
-    }, 5000);
-
-    return () => clearTimeout(timeoutId);
+    const intervalId = setInterval(fetchParticipantMappings, pollMs);
+    return () => clearInterval(intervalId);
   }, [room, enabled]);
 
   // Listen for real-time updates to participant mappings

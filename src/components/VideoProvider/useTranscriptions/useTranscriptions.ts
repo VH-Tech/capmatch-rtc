@@ -16,7 +16,7 @@ export default function useTranscriptions(room: Room | null) {
   const [transcriptions, setTranscriptions] = useState<TranscriptionEvent[]>([]);
   const [participantNameMap, setParticipantNameMap] = useState<Record<string, string>>({});
 
-  // Fetch participant name mappings when room is available
+  // Fetch participant name mappings when room is available (with polling)
   useEffect(() => {
     if (!room) {
       return;
@@ -39,20 +39,32 @@ export default function useTranscriptions(room: Room | null) {
           data.forEach((row: any) => {
             mappings[row.participant_sid] = row.participant_identity;
           });
-          setParticipantNameMap(mappings);
+          
+          // Only update state if mappings actually changed to avoid re-renders
+          setParticipantNameMap(prev => {
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(mappings);
+            if (prevKeys.length !== nextKeys.length) return mappings;
+            for (const k of nextKeys) {
+              if (prev[k] !== mappings[k]) return mappings;
+            }
+            return prev; // unchanged
+          });
+
+          console.log('Fetched participant mappings:', mappings);
         }
       } catch (error) {
         console.error('Error fetching participant mappings:', error);
       }
     };
 
-    // Fetch immediately, then also fetch again after 5 seconds to catch any late arrivals
+    // Polling interval (ms), default 5000. Can be overridden via env.
+    const pollMs = Number(process.env.REACT_APP_PARTICIPANT_POLL_MS) || 5000;
+    // Fetch immediately, then poll
     fetchParticipantMappings();
-    const timeoutId = setTimeout(() => {
-      fetchParticipantMappings();
-    }, 1500);
+    const intervalId = setInterval(fetchParticipantMappings, pollMs);
 
-    return () => clearTimeout(timeoutId);
+    return () => clearInterval(intervalId);
   }, [room]);
 
   useEffect(() => {
