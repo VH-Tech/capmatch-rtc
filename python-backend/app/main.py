@@ -2,16 +2,15 @@ import os
 import logging
 from typing import Dict, Any
 from supabase import create_client, Client
-
+from datetime import datetime
 from fastapi import FastAPI, Request, Header, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
-from dotenv import load_dotenv  # type: ignore
+from dotenv import load_dotenv  
 load_dotenv()
 
-# Twilio request validator (created per-request below so env changes in tests are respected)
-from twilio.request_validator import RequestValidator  # type: ignore
+from twilio.request_validator import RequestValidator  
 
 
 import google.generativeai as genai
@@ -167,9 +166,20 @@ async def twilio_webhook(
     event = form_dict.get("StatusCallbackEvent")
     room_name = form_dict.get("RoomName")
 
-    # Persist in Supabase (background) when configured. We store the whole form as `payload`
+    if event == "room-ended":
+        print("Ending room_name=%s", room_name)
 
-    if event == "participant-connected":
+
+    elif event == "room-created":
+        print("Creating room_name=%s", room_name)
+        response = (
+            supabase.table("meetings")
+            .insert({"room_name": room_name})
+            .execute()
+        )
+        print(response.data)
+
+    elif event == "participant-connected":
         participant_sid = form_dict.get("ParticipantSid")
         participant_identity = form_dict.get("ParticipantIdentity")
         print("Connecting participant_sid=%s to room_name=%s", participant_sid, room_name, participant_identity)
@@ -240,15 +250,17 @@ async def twilio_webhook(
             .execute()
         )
         print(response.data)
-    return JSONResponse(status_code=HTTP_200_OK, content={"ok": True})
+
+        # Store an ISO8601 string for the ended timestamp so the JSON encoder can serialize it
+        response = (
+            supabase.table("meetings")
+            .update({"ended_at": datetime.utcnow().isoformat()})
+            .eq("room_name", room_name)
+            .execute()
+        )
+        print(response.data)
 
 
-# Optional plaintext endpoint for quick manual checks
-@app.post("/twilio/webhook/plain", response_class=PlainTextResponse)
-async def twilio_webhook_plain(
-    request: Request,
-    x_twilio_signature: str | None = Header(default=None),
-):
     form = await request.form()
     form_dict: Dict[str, Any] = {k: v for k, v in form.items()}
 

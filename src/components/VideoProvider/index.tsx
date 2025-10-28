@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useCallback, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
 import { CreateLocalTrackOptions, ConnectOptions, LocalAudioTrack, LocalVideoTrack, Room } from 'twilio-video';
 import { ErrorCallback } from '../../types';
 import { SelectedParticipantProvider } from './useSelectedParticipant/useSelectedParticipant';
@@ -12,6 +12,8 @@ import useRestartAudioTrackOnDeviceChange from './useRestartAudioTrackOnDeviceCh
 import useRoom from './useRoom/useRoom';
 import useScreenShareToggle from './useScreenShareToggle/useScreenShareToggle';
 import useTranscriptions, { TranscriptionEvent } from './useTranscriptions/useTranscriptions';
+import { useAppState } from '../../state';
+import { updateMeetingParticipants } from '../../utils/updateMeetingParticipants';
 
 /*
  *  The hooks used by the VideoProvider component are different than the hooks found in the 'hooks/' directory. The hooks
@@ -57,6 +59,8 @@ export function VideoProvider({ options, children, onError = () => {} }: VideoPr
     [onError]
   );
 
+  const { user } = useAppState();
+
   const {
     localTracks,
     getLocalVideoTrack,
@@ -87,6 +91,23 @@ export function VideoProvider({ options, children, onError = () => {} }: VideoPr
     | undefined;
   const [backgroundSettings, setBackgroundSettings] = useBackgroundSettings(videoTrack, room);
   const { transcriptions, clearTranscriptions } = useTranscriptions(room);
+
+  // Update meeting participants when user joins a room
+  useEffect(() => {
+    console.log('[VideoProvider] Participant update check:', {
+      hasRoom: !!room,
+      roomName: room?.name,
+      hasUser: !!user,
+      userEmail: user && 'email' in user ? user.email : 'N/A',
+    });
+    
+    if (room && user && 'email' in user && user.email) {
+      console.log('[VideoProvider] Calling updateMeetingParticipants for:', room.name, user.email);
+      updateMeetingParticipants(room.name, user.email);
+    } else {
+      console.log('[VideoProvider] Skipping participant update - conditions not met');
+    }
+  }, [room, user]);
 
   return (
     <VideoContext.Provider

@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createClient, Session, User } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '../../utils/supabaseClient';
 
 export default function useSupabaseAuth() {
   const [user, setUser] = useState<User | null>(null);

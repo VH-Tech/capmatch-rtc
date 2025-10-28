@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Room } from 'twilio-video';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from '../../../utils/supabaseClient';
 
 export interface TranscriptionEvent {
   participant: string;
