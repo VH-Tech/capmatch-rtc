@@ -47,7 +47,7 @@ declare global {
   }
 }
 
-// Bootstrap globals
-global.Twilio = require('twilio');
-global.Twilio.Response = TwilioResponse;
-global.Runtime = Runtime;
+// Bootstrap globals (cast to any to satisfy TS on global assignments)
+(globalThis as any).Twilio = require('twilio');
+(globalThis as any).Twilio.Response = TwilioResponse;
+(globalThis as any).Runtime = Runtime;

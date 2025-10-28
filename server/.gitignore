@@ -1,0 +1,6 @@
+.env
+.vscode
+node_modules
+dist
+fly.toml
+deploy-secrets.sh

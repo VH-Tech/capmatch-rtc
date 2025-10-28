@@ -38,3 +38,4 @@ public/virtualbackground/
 .venv/
 *.toml
 *.pyc
+deploy-secrets.sh

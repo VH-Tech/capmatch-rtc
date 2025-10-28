@@ -9,13 +9,22 @@ const PORT = process.env.PORT ?? 8081;
 
 const app = express();
 
-// Enable CORS for all routes
-app.use(cors({
-  origin: '*', // Allow all origins. In production, you should specify your frontend domain.
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+// CORS configuration: allow Authorization header and common methods.
+// Configure allowed origins via ALLOWED_ORIGINS (comma-separated). If unset, allow all origins.
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // non-browser or same-origin
+    if (allowedOrigins.length === 0) return callback(null, true); // allow all when not configured
+    return callback(null, allowedOrigins.includes(origin));
+  },
+  credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  // Let cors reflect whatever headers the browser requests in Access-Control-Request-Headers
+  optionsSuccessStatus: 204,
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
