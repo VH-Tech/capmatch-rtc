@@ -35,4 +35,6 @@ serviceAccountKey.json
 
 public/noisecancellation/
 public/virtualbackground/
-python*
+.venv/
+*.toml
+

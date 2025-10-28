@@ -1,0 +1,7 @@
+fastapi[standard]
+supabase
+twilio
+google-generativeai
+firebase-admin
+httpx[http2]
+uvicorn[standard]
