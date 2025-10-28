@@ -35,24 +35,36 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const useStyles = makeStyles((theme: Theme) => ({
+  background: {
+    minHeight: '100vh',
+    background: 'rgb(40, 42, 43)',
+    display: 'flex',
+    flexDirection: 'column',
+  },
   container: {
     paddingTop: theme.spacing(4),
     paddingBottom: theme.spacing(4),
-    minHeight: '100vh',
-    background: '#f5f5f5',
+    flex: 1,
   },
   header: {
     marginBottom: theme.spacing(4),
+    color: 'white',
   },
   backButton: {
     marginBottom: theme.spacing(2),
+    color: 'white',
+    borderColor: 'white',
+    '&:hover': {
+      borderColor: 'white',
+      background: 'rgba(255, 255, 255, 0.1)',
+    },
   },
   title: {
     fontWeight: 700,
     marginBottom: theme.spacing(1),
   },
   subtitle: {
-    color: theme.palette.text.secondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: theme.spacing(3),
   },
   section: {
@@ -67,6 +79,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   card: {
     height: '100%',
+    borderRadius: '8px',
   },
   executiveSummary: {
     fontSize: '1.1rem',
@@ -84,18 +97,25 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '50vh',
+    '& .MuiCircularProgress-root': {
+      color: 'white',
+    },
   },
   metaInfo: {
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1),
     marginTop: theme.spacing(2),
+    color: 'white',
+    '& .MuiSvgIcon-root': {
+      color: 'white',
+    },
   },
   divider: {
     margin: theme.spacing(3, 0),
   },
   transcript: {
-    background: theme.palette.grey[100],
+    background: '#f5f5f5',
     padding: theme.spacing(2),
     borderRadius: theme.shape.borderRadius,
     fontFamily: 'monospace',
@@ -103,6 +123,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     whiteSpace: 'pre-wrap',
     maxHeight: '400px',
     overflowY: 'auto',
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: theme.spacing(8),
+    background: 'white',
+    borderRadius: '8px',
+    margin: theme.spacing(4, 0),
   },
 }));
 
@@ -208,65 +235,73 @@ export default function MeetingSummary() {
 
   if (loading) {
     return (
-      <div className={classes.loading}>
-        <CircularProgress />
+      <div className={classes.background}>
+        <div className={classes.loading}>
+          <CircularProgress />
+        </div>
       </div>
     );
   }
 
   if (!meeting || !meeting.summary) {
     return (
-      <Container className={classes.container} maxWidth="lg">
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={handleBack}
-          className={classes.backButton}
-        >
-          Back to Meetings
-        </Button>
-        <Typography variant="h5">Meeting summary not found</Typography>
-      </Container>
+      <div className={classes.background}>
+        <Container className={classes.container} maxWidth="lg">
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={handleBack}
+            className={classes.backButton}
+            variant="outlined"
+          >
+            Back to Meetings
+          </Button>
+          <div className={classes.emptyState}>
+            <Typography variant="h5">Meeting summary not found</Typography>
+          </div>
+        </Container>
+      </div>
     );
   }
 
   const summary = meeting.summary;
 
   return (
-    <Container className={classes.container} maxWidth="lg">
-      <Button
-        startIcon={<ArrowBack />}
-        onClick={handleBack}
-        className={classes.backButton}
-        variant="outlined"
-      >
-        Back to Meetings
-      </Button>
+    <div className={classes.background}>
+      <Container className={classes.container} maxWidth="lg">
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={handleBack}
+          className={classes.backButton}
+          variant="outlined"
+        >
+          Back to Meetings
+        </Button>
 
-      <div className={classes.header}>
-        <Typography variant="h3" className={classes.title}>
-          {summary.title}
-        </Typography>
-        <Typography variant="subtitle1" className={classes.subtitle}>
-          Room: {meeting.room_name} • {new Date(meeting.timestamp).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Typography>
+        <div className={classes.header}>
+          <Typography variant="h3" className={classes.title}>
+            {summary.title}
+          </Typography>
+          <Typography variant="subtitle1" className={classes.subtitle}>
+            Room: {meeting.room_name} • {new Date(meeting.timestamp).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Typography>
 
-        <div className={classes.metaInfo}>
-          <Language fontSize="small" />
-          <Typography variant="body2">
-            Language: {summary.transcript_language}
-          </Typography>
-          <Person fontSize="small" style={{ marginLeft: 16 }} />
-          <Typography variant="body2">
-            Participants: {summary.participants}
-          </Typography>
+          <div className={classes.metaInfo}>
+            <Language fontSize="small" />
+            <Typography variant="body2">
+              Language: {summary.transcript_language}
+            </Typography>
+            <Person fontSize="small" style={{ marginLeft: 16 }} />
+            <Typography variant="body2">
+              Participants: {summary.participants}
+            </Typography>
+          </div>
         </div>
-      </div>
 
       <Grid container spacing={3}>
         {/* Executive Summary */}
@@ -416,6 +451,7 @@ export default function MeetingSummary() {
           </Card>
         </Grid>
       </Grid>
-    </Container>
+      </Container>
+    </div>
   );
 }

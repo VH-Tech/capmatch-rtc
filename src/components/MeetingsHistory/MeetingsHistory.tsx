@@ -19,26 +19,41 @@ const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const useStyles = makeStyles((theme: Theme) => ({
+  background: {
+    minHeight: '100vh',
+    background: 'rgb(40, 42, 43)',
+    display: 'flex',
+    flexDirection: 'column',
+  },
   container: {
     paddingTop: theme.spacing(4),
     paddingBottom: theme.spacing(4),
-    minHeight: '100vh',
-    background: '#f5f5f5',
+    flex: 1,
   },
   header: {
     marginBottom: theme.spacing(4),
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    color: 'white',
+  },
+  backButton: {
+    color: 'white',
+    borderColor: 'white',
+    '&:hover': {
+      borderColor: 'white',
+      background: 'rgba(255, 255, 255, 0.1)',
+    },
   },
   card: {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     transition: 'transform 0.2s, box-shadow 0.2s',
+    borderRadius: '8px',
     '&:hover': {
       transform: 'translateY(-4px)',
-      boxShadow: theme.shadows[8],
+      boxShadow: theme.shadows[12],
       cursor: 'pointer',
     },
   },
@@ -48,10 +63,12 @@ const useStyles = makeStyles((theme: Theme) => ({
   title: {
     marginBottom: theme.spacing(1),
     fontWeight: 600,
+    color: theme.palette.primary.main,
   },
   summary: {
     color: theme.palette.text.secondary,
     marginBottom: theme.spacing(2),
+    lineHeight: 1.6,
   },
   date: {
     color: theme.palette.text.secondary,
@@ -62,10 +79,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '50vh',
+    '& .MuiCircularProgress-root': {
+      color: 'white',
+    },
   },
   emptyState: {
     textAlign: 'center',
     padding: theme.spacing(8),
+    background: 'white',
+    borderRadius: '8px',
+    margin: theme.spacing(4, 0),
   },
 }));
 
@@ -133,22 +156,25 @@ export default function MeetingsHistory() {
 
   if (loading) {
     return (
-      <div className={classes.loading}>
-        <CircularProgress />
+      <div className={classes.background}>
+        <div className={classes.loading}>
+          <CircularProgress />
+        </div>
       </div>
     );
   }
 
   return (
-    <Container className={classes.container} maxWidth="lg">
-      <div className={classes.header}>
-        <Typography variant="h4" component="h1">
-          Meeting History
-        </Typography>
-        <Button variant="outlined" color="primary" onClick={handleBackHome}>
-          Back to Home
-        </Button>
-      </div>
+    <div className={classes.background}>
+      <Container className={classes.container} maxWidth="lg">
+        <div className={classes.header}>
+          <Typography variant="h4" component="h1">
+            Meeting History
+          </Typography>
+          <Button variant="outlined" className={classes.backButton} onClick={handleBackHome}>
+            Back to Home
+          </Button>
+        </div>
 
       {meetings.length === 0 ? (
         <div className={classes.emptyState}>
@@ -186,6 +212,7 @@ export default function MeetingsHistory() {
           ))}
         </Grid>
       )}
-    </Container>
+      </Container>
+    </div>
   );
 }
