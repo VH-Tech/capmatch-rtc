@@ -8,6 +8,9 @@ So the architecture of this application consists of primarily 5 components namel
 
 Here's a step-by-step guide of the process :
 
+<img width="966" height="596" alt="image" src="https://github.com/user-attachments/assets/975150de-91e7-4337-a0e9-e1241b349171" />
+
+
 1. the frontend issues a request to the token server for a signed token to join a twilio room.
 2. the token server sends back the signed token.
 3. the frontend sends a request to the twilio cloud to join the video room with the signed token.
@@ -85,6 +88,24 @@ SUPABASE_URL=XXXXXXXXX.supabase.co
 SUPABASE_KEY=sb_secret_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 GEMINI_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
+
+Supabase broadcast function to be triggered on an insert event :
+
+```
+begin
+  perform realtime.broadcast_changes(
+    'participant_sid' ::text, -- topic - the topic to which we're broadcasting
+    TG_OP,                                             -- event - the event that triggered the function
+    TG_OP,                                             -- operation - the operation that triggered the function
+    TG_TABLE_NAME,                                     -- table - the table that caused the trigger
+    TG_TABLE_SCHEMA,                                   -- schema - the schema of the table that caused the trigger
+    NEW,                                               -- new record - the record after the change
+    OLD                                                -- old record - the record before the change
+  );
+  return null;
+end;
+```
+
 
 
 ## What is it
