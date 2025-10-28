@@ -37,4 +37,4 @@ public/noisecancellation/
 public/virtualbackground/
 .venv/
 *.toml
-
+*.pyc
