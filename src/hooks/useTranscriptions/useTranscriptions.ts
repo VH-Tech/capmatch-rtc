@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room } from 'twilio-video';
 import { createClient } from '@supabase/supabase-js';
+import { useAppState } from '../../state';
 
 /**
  * React hook for Twilio Real-Time Transcriptions.
@@ -68,6 +69,7 @@ function formatParticipant(participant: string, nameMap: Record<string, string>)
 
 export function useTranscriptions(room: Room | null, opts: { enabled?: boolean } = {}): UseTranscriptionsResult {
   const enabled = opts.enabled !== undefined ? opts.enabled : true;
+  const { user } = useAppState();
   const [lines, setLines] = useState<TranscriptionLine[]>([]);
   const [live, setLive] = useState<TranscriptionLine | null>(null);
   const liveRef = useRef<{ [sid: string]: TranscriptionLine }>({});
@@ -79,7 +81,8 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
     participantName: string,
     text: string,
     roomName: string,
-    timestamp: number
+    timestamp: number,
+    userEmail: string | undefined
   ) => {
     try {
       // Format timestamp as readable string
@@ -131,6 +134,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
             room_name: roomName,
             transcript: newLine,
             timestamp: new Date(timestamp).toISOString(),
+            user_email: userEmail || null,
           });
 
         if (insertError) {
@@ -173,7 +177,8 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
         const finalLine: TranscriptionLine = { text, participant, time };
 
         // Save final transcription to Supabase
-        saveTranscriptionToSupabase(participantSid, participant, text, room.name, time);
+        const userEmail = user && 'email' in user ? user.email || undefined : undefined;
+        saveTranscriptionToSupabase(participantSid, participant, text, room.name, time, userEmail);
 
         setLines(prev => {
           // Add new line
