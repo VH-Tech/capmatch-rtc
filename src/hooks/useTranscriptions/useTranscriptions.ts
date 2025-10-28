@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Room } from 'twilio-video';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * React hook for Twilio Real-Time Transcriptions.
@@ -14,6 +15,10 @@ import { Room } from 'twilio-video';
  *   room.on('transcription', event => ...);
  *   Pass receiveTranscriptions: true in ConnectOptions.
  */
+
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const STABILITY_THRESHOLD = 0.9;
 
@@ -46,10 +51,15 @@ const MAX_TOTAL_LINES = 3;
 const MAX_LINES_PER_PARTICIPANT = 2;
 
 /**
- * Format participant display string as PA..1234 (last 4 chars of SID).
+ * Format participant display string - will be replaced by actual name from mapping.
  */
-function formatParticipant(participant: string): string {
+function formatParticipant(participant: string, nameMap: Record<string, string>): string {
   if (!participant) return '';
+  // Check if we have a mapping for this participant SID
+  if (nameMap[participant]) {
+    return nameMap[participant];
+  }
+  // Fallback to truncated SID if no mapping found
   if (/^PA[a-zA-Z0-9]+$/.test(participant) && participant.length > 4) {
     return `PA..${participant.slice(-4)}`;
   }
@@ -61,6 +71,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
   const [lines, setLines] = useState<TranscriptionLine[]>([]);
   const [live, setLive] = useState<TranscriptionLine | null>(null);
   const liveRef = useRef<{ [sid: string]: TranscriptionLine }>({});
+  const [participantNameMap, setParticipantNameMap] = useState<Record<string, string>>({});
 
   const clear = useCallback(() => {
     setLines([]);
@@ -71,7 +82,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
   const push = useCallback(
     (event: TranscriptionEvent) => {
       if (!enabled) return;
-      const participant = formatParticipant(event.participant);
+      const participant = formatParticipant(event.participant, participantNameMap);
       const text = event.transcription;
       const time = event.absolute_time ? Date.parse(event.absolute_time) : Date.now();
 
@@ -131,8 +142,82 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
         setLive(null);
       }
     },
-    [enabled]
+    [enabled, participantNameMap]
   );
+
+  // Fetch participant name mappings from Supabase
+  useEffect(() => {
+    if (!room || !enabled) {
+      return;
+    }
+
+    const fetchParticipantMappings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('active_participants')
+          .select('participant_sid, participant_identity')
+          .eq('room_name', room.name);
+
+        if (error) {
+          console.error('Error fetching participant mappings:', error);
+          return;
+        }
+
+        if (data) {
+          const mappings: Record<string, string> = {};
+          data.forEach((row: any) => {
+            mappings[row.participant_sid] = row.participant_identity;
+          });
+          setParticipantNameMap(mappings);
+        }
+      } catch (error) {
+        console.error('Error fetching participant mappings:', error);
+      }
+    };
+
+    // Fetch immediately, then also fetch again after 5 seconds
+    fetchParticipantMappings();
+    const timeoutId = setTimeout(() => {
+      fetchParticipantMappings();
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [room, enabled]);
+
+  // Listen for real-time updates to participant mappings
+  useEffect(() => {
+    if (!room || !enabled) {
+      return;
+    }
+
+    const setupRealtimeChannel = async () => {
+      await supabase.realtime.setAuth();
+      const changes = supabase
+        .channel(`participant_sid_overlay`, {
+          config: { private: true },
+        })
+        .on('broadcast', { event: 'INSERT' }, (payload) => {
+          if (payload.payload?.record && payload.payload.record.room_name === room.name) {
+            const newParticipant = payload.payload.record;
+            setParticipantNameMap((prevMap) => ({
+              ...prevMap,
+              [newParticipant.participant_sid]: newParticipant.participant_identity,
+            }));
+          }
+        })
+        .on('broadcast', { event: 'UPDATE' }, (payload) => console.log(payload))
+        .on('broadcast', { event: 'DELETE' }, (payload) => console.log(payload))
+        .subscribe();
+
+      return changes;
+    };
+
+    const channel = setupRealtimeChannel();
+
+    return () => {
+      channel.then(ch => ch.unsubscribe());
+    };
+  }, [room, enabled]);
 
   useEffect(() => {
     if (!room || !enabled) {
