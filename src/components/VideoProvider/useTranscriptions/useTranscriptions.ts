@@ -69,7 +69,7 @@ export default function useTranscriptions(room: Room | null) {
         transcription: transcriptionData.transcription,
         timestamp: new Date(),
       };
-
+      console.log('Received transcription event:', transcriptionData);
       console.log(`${transcriptionEvent.participant}: ${transcriptionEvent.transcription}`);
 
       setTranscriptions(prevTranscriptions => [...prevTranscriptions, transcriptionEvent]);

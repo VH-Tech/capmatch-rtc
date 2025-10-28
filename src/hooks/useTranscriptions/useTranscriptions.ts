@@ -73,6 +73,75 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
   const liveRef = useRef<{ [sid: string]: TranscriptionLine }>({});
   const [participantNameMap, setParticipantNameMap] = useState<Record<string, string>>({});
 
+  // Helper function to save transcription to Supabase
+  const saveTranscriptionToSupabase = useCallback(async (
+    participantSid: string,
+    participantName: string,
+    text: string,
+    roomName: string,
+    timestamp: number
+  ) => {
+    try {
+      // Format timestamp as readable string
+      const timestampStr = new Date(timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+
+      // Format the new transcript line
+      const newLine = `${participantName} [${timestampStr}]: ${text}`;
+
+      // First, check if a record exists for this participant in this room
+      const { data: existingData, error: fetchError } = await supabase
+        .from('transcriptions')
+        .select('transcript')
+        .eq('participant_sid', participantSid)
+        .eq('room_name', roomName)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 is "not found" error, which is expected for first transcript
+        console.error('Error fetching existing transcription:', fetchError);
+        return;
+      }
+
+      if (existingData) {
+        // Update existing record by appending new line
+        const updatedTranscript = existingData.transcript + '\n' + newLine;
+
+        const { error: updateError } = await supabase
+          .from('transcriptions')
+          .update({
+            transcript: updatedTranscript,
+            timestamp: new Date(timestamp).toISOString(), // Update to latest timestamp
+          })
+          .eq('participant_sid', participantSid)
+          .eq('room_name', roomName);
+
+        if (updateError) {
+          console.error('Error updating transcription:', updateError);
+        }
+      } else {
+        // Create new record
+        const { error: insertError } = await supabase
+          .from('transcriptions')
+          .insert({
+            participant_sid: participantSid,
+            room_name: roomName,
+            transcript: newLine,
+            timestamp: new Date(timestamp).toISOString(),
+          });
+
+        if (insertError) {
+          console.error('Error inserting transcription:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving transcription to Supabase:', error);
+    }
+  }, []);
+
   const clear = useCallback(() => {
     setLines([]);
     setLive(null);
@@ -81,8 +150,9 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
 
   const push = useCallback(
     (event: TranscriptionEvent) => {
-      if (!enabled) return;
-      const participant = formatParticipant(event.participant, participantNameMap);
+      if (!enabled || !room) return;
+      const participantSid = event.participant; // Keep original SID
+      const participant = formatParticipant(participantSid, participantNameMap);
       const text = event.transcription;
       const time = event.absolute_time ? Date.parse(event.absolute_time) : Date.now();
 
@@ -101,6 +171,10 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
       } else {
         // Final result: move from live to committed
         const finalLine: TranscriptionLine = { text, participant, time };
+
+        // Save final transcription to Supabase
+        saveTranscriptionToSupabase(participantSid, participant, text, room.name, time);
+
         setLines(prev => {
           // Add new line
           const updated = [...prev, finalLine];
@@ -142,7 +216,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
         setLive(null);
       }
     },
-    [enabled, participantNameMap]
+    [enabled, participantNameMap, room, saveTranscriptionToSupabase]
   );
 
   // Fetch participant name mappings from Supabase
