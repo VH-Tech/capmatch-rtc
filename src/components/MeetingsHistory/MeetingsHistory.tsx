@@ -124,9 +124,7 @@ export default function MeetingsHistory() {
   }, [user]);
 
   const handleCardClick = (roomName: string) => {
-    // Navigate to meeting details or transcript view
-    // For now, we'll just log it
-    console.log('Clicked meeting:', roomName);
+    history.push(`/meetings/${roomName}`);
   };
 
   const handleBackHome = () => {

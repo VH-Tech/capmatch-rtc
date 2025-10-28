@@ -10,6 +10,7 @@ import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-d
 import ErrorDialog from './components/ErrorDialog/ErrorDialog';
 import LoginPage from './components/LoginPage/LoginPage';
 import MeetingsHistory from './components/MeetingsHistory/MeetingsHistory';
+import MeetingSummary from './components/MeetingSummary/MeetingSummary';
 import PrivateRoute from './components/PrivateRoute/PrivateRoute';
 import theme from './theme';
 import './types';
@@ -48,8 +49,11 @@ export const ReactApp = () => (
             <PrivateRoute path="/room/:URLRoomName">
               <VideoApp />
             </PrivateRoute>
-            <PrivateRoute path="/meetings">
+            <PrivateRoute exact path="/meetings">
               <MeetingsHistory />
+            </PrivateRoute>
+            <PrivateRoute path="/meetings/:roomName">
+              <MeetingSummary />
             </PrivateRoute>
             <Route path="/login">
               <LoginPage />
