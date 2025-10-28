@@ -1,5 +1,92 @@
 # Capmatch-RTC
 
+deployed at : https://capmatch-rtc-ux1y.vercel.app
+
+## Notion questions
+### An explanation of your architectural choices, including why you chose your specific Video and AI SDKs.
+So the architecture of this application consists of primarily 5 components namely : 1. Frontend App 2. Token Server 3. Twilio Cloud 4. FastAPI server 5. Supabase
+
+Here's a step-by-step guide of the process :
+
+1. the frontend issues a request to the token server for a signed token to join a twilio room.
+2. the token server sends back the signed token.
+3. the frontend sends a request to the twilio cloud to join the video room with the signed token.
+4. twilio cloud along with the access also starts streaming realtime transcription events(ParticipantID : "this is a test") to the client app.
+5. on creation of room twilio raises a webhook that's recieved by the fastapi server to update the db with active participants and their metadata.
+6. the complexity of realtime transcription and meeting management is handled by twilio
+7. the realtime transcripts being streamed to the client are thereafter transmitted by the client to supabase to concatenate and form a transcript.
+8. Whenever a new person joins a room fastapi server adds it to the table of active participants.
+9. the supabase table of active participants is realtime enabled. ie the frontend has subscribed to a channel which publishes all insert event straight to the app so that the apps dictionary (ParticipantID -> Name) is always upto date.
+10. the transcripts are created for every user_email + room_name combo in realtime. (This might not be the most efficient in most usecases but serves all)
+11. once a user leaves the meeting the webhook signals the fastAPI server to start summarizing the transcript with Gemini.
+12. At the end a single table has both the transcript and the summary ready. with <30s in processing time (depending on meeting length)
+
+Design choices :
+1. I started with a sample app from Twilio and hacked around it fit my particular usecase. Video conferencing apps are very complex in nature and this opensource library offseted nearly all the effort for me. Hacking around took a long time (~12hr) including the setting up of token server and realtime transcription.
+2. I initially started with streamio but the results were horrible. Switched to AWS Kinesis WebRTC but the complexity to develop in 36 hours was too high. I used twilio because it's one of the best apis in terms of uptime and reliability, so it's production ready from day 1. The initial plan was to get audio tracks for the meeting stitch them together and then process it. But Twilio had realtime transcription options in it's beta features.
+3. The realtime transcription gives chunks of texts with a level of stability. With some clever engineering(claude) I was able to get perfect sentences in near-realtime. Which were stiched together with timestamps to get a transcript
+4. Since twilio gives it's own id to the users supabase realtime channels were used to keep every user in a room updated about new ids and how the new transcript chunks are going to be recieved for every new user
+5. The choice of LLM for summarization was Gemini 2.5 - flash due it's long context window and fast runtime.
+  
+### A brief discussion of your prompt engineering strategy for the summarization task.
+I didn't have to think much on this as I already had a carefully crafted prompt from my previous notetaker which was tailored for sales people. I wanted the LLM to focus on the following :
+
+    "title": "...",
+    "executive_summary": "...",
+    "key_points": ["point 1", "point 2", "..."],
+    "important_numbers": ["metric 1", "metric 2", "..."],
+    "action_items": ["action 1", "action 2", "..."],
+    "questions_raised": ["question 1", "question 2", "..."],
+    "open_questions": ["open question 1", "open question 2", "..."],
+
+1. The important specifics discussed in a meeting shouldn't go untracked. hence the important_numbers and key points.
+2. Action items are included because each and every user should be aware of what all changes/ammendments/modifications to make where to minimize the need of reconnecting
+3. questions raised are included so that the users can make sure they asked every question they had in mind
+4. open questions are included so that all the parties can quickly close all the gaps that might have been left in the conversation 
+
+### Your insightful answer to the "Business & Product Thinking" question.
+  I have implemented realtime transcription. Now 1 amazing features I think to build on this would be :
+
+  Question directory : Since the problem involves a lot of back and forth communication. There's a strong requirement to minimize it. Which means making sure no question in mind gets slipped or remains open. A question directory would basically ask you to put down all your questions before the meeting and would make sure all of them gets addressed to and also make a note of any new open questions created. This would eventually creatte a very rich knowledge directory as well which can always be referenced throughout the deal.
+
+  To implement this a parallel network of 3 SLMs need to be put in the pipeline that 1. flags questions and then tries to match it with the given questions, find answers in the transcript and detect new questions. (Not sure how realtime SLMs are but some amount of chunking should do the job)
+  
+### Clear, step-by-step instructions on how to set up and run your project (including API key setup).
+
+ only supabase key and URL is needed to run the frontend : 
+ 
+ in .env :
+ ```
+ REACT_APP_SUPABASE_ANON_KEY="eyXXXXXX"
+ REACT_APP_SUPABASE_URL="https://XXXXXXX.supabase.co"
+```
+
+ For token-server :
+ 
+ in .env :
+ 
+*instructions to obtain twilio key given below
+```
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SECRET=your_api_key_secret
+TWILIO_CONVERSATIONS_SERVICE_SID=ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+REACT_APP_TWILIO_ENVIRONMENT=prod
+PORT=8081
+ALLOWED_ORIGINS=http://localhost:3000,https://capmatch-rtc-ux1y-git-main-vh-techs-projects.vercel.app
+```
+
+For Python-Backend :
+
+in .env :
+```
+TWILIO_AUTH_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+SUPABASE_URL=XXXXXXXXX.supabase.co
+SUPABASE_KEY=sb_secret_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+GEMINI_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+
 ## What is it
 
 This application demonstrates a multi-party video application built with [Twilio's Programmable Video JS SDK](https://github.com/twilio/twilio-video.js), [Twilio's Conversations JS SDK](https://www.npmjs.com/package/@twilio/conversations), and [Create React App](https://github.com/facebook/create-react-app).
