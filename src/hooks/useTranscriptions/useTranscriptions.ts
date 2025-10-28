@@ -121,6 +121,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
         const { error: updateError } = await supabase
           .from('transcriptions')
           .update({
+            participant_sid: participantSid,
             transcript: updatedTranscript,
             timestamp: new Date(timestamp).toISOString(), // Update to latest timestamp
           })
