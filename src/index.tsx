@@ -9,6 +9,7 @@ import AppStateProvider, { useAppState } from './state';
 import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
 import ErrorDialog from './components/ErrorDialog/ErrorDialog';
 import LoginPage from './components/LoginPage/LoginPage';
+import MeetingsHistory from './components/MeetingsHistory/MeetingsHistory';
 import PrivateRoute from './components/PrivateRoute/PrivateRoute';
 import theme from './theme';
 import './types';
@@ -46,6 +47,9 @@ export const ReactApp = () => (
             </PrivateRoute>
             <PrivateRoute path="/room/:URLRoomName">
               <VideoApp />
+            </PrivateRoute>
+            <PrivateRoute path="/meetings">
+              <MeetingsHistory />
             </PrivateRoute>
             <Route path="/login">
               <LoginPage />

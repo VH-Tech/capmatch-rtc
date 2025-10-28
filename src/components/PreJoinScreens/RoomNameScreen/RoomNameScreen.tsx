@@ -2,6 +2,7 @@ import React, { ChangeEvent, FormEvent, useState } from 'react';
 import { Typography, makeStyles, TextField, Grid, Button, InputLabel, Theme } from '@material-ui/core';
 import { useAppState } from '../../../state';
 import { generateRoomCode } from '../../../utils';
+import { useHistory } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => ({
   gutterBottom: {
@@ -45,6 +46,7 @@ interface RoomNameScreenProps {
 
 export default function RoomNameScreen({ name, roomName, setName, setRoomName, handleSubmit }: RoomNameScreenProps) {
   const classes = useStyles();
+  const history = useHistory();
   const { user } = useAppState();
   const [mode, setMode] = useState<'join' | 'create' | null>(null);
 
@@ -125,6 +127,16 @@ export default function RoomNameScreen({ name, roomName, setName, setRoomName, h
               onClick={handleJoinRoom}
             >
               Join Room
+            </Button>
+          </Grid>
+          <Grid item xs={12}>
+            <Button
+              variant="text"
+              color="primary"
+              fullWidth
+              onClick={() => history.push('/meetings')}
+            >
+              View Meeting History
             </Button>
           </Grid>
         </Grid>

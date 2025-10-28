@@ -95,11 +95,16 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
       // Format the new transcript line
       const newLine = `${participantName} [${timestampStr}]: ${text}`;
 
-      // First, check if a record exists for this participant in this room
+      if (!userEmail) {
+        console.warn('Cannot save transcription: user email is missing');
+        return;
+      }
+
+      // First, check if a record exists for this user in this room
       const { data: existingData, error: fetchError } = await supabase
         .from('transcriptions')
         .select('transcript')
-        .eq('participant_sid', participantSid)
+        .eq('user_email', userEmail)
         .eq('room_name', roomName)
         .single();
 
@@ -119,7 +124,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
             transcript: updatedTranscript,
             timestamp: new Date(timestamp).toISOString(), // Update to latest timestamp
           })
-          .eq('participant_sid', participantSid)
+          .eq('user_email', userEmail)
           .eq('room_name', roomName);
 
         if (updateError) {
@@ -134,7 +139,7 @@ export function useTranscriptions(room: Room | null, opts: { enabled?: boolean }
             room_name: roomName,
             transcript: newLine,
             timestamp: new Date(timestamp).toISOString(),
-            user_email: userEmail || null,
+            user_email: userEmail,
           });
 
         if (insertError) {
